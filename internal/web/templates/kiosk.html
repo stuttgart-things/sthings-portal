@@ -11,7 +11,7 @@
 <body>
 <div class="hr-kiosk" id="hr-kiosk" data-seconds="{{.Seconds}}" data-pause="{{.Pause}}" data-reset="{{.Reset}}" data-refresh="{{.RefreshSeconds}}">
     <header class="hr-kiosk-header">
-        {{if .Brand.HasHeaderImage}}<a class="hr-logo hr-logo-img" href="/"><img src="/branding/header" alt="{{.Brand.Title}}"></a>{{else}}<a class="hr-logo" href="/">{{.Brand.Title}}<small>KIOSK</small></a>{{end}}
+        {{if .Brand.HasHeaderImage}}<a class="hr-logo hr-logo-img" href="/"><img src="/branding/header" alt="{{.Brand.Title}}"></a>{{else if .Brand.Logo}}<a class="hr-logo hr-logo-mark" href="/"><img src="/static/{{.Brand.Logo}}" alt="{{.Brand.LogoAlt}}" width="40" height="40"><span>{{.Brand.Title}}<small>KIOSK</small></span></a>{{else}}<a class="hr-logo" href="/">{{.Brand.Title}}<small>KIOSK</small></a>{{end}}
         <div class="hr-kiosk-now">
             <span class="hr-kiosk-title" id="hr-kiosk-title">{{with .Slides}}{{(index . 0).Title}}{{end}}</span>
             <span class="hr-kiosk-count" id="hr-kiosk-count"></span>

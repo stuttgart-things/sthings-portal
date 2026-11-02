@@ -53,4 +53,4 @@
 {{with .Stylesheet}}    <link rel="stylesheet" href="/static/{{.}}">
 {{end}}{{end}}
 
-{{define "brand-logo"}}{{if .HasHeaderImage}}<a class="hr-logo hr-logo-img" href="/"><img src="/branding/header" alt="{{.Title}}"></a>{{else}}<a class="hr-logo" href="/">{{.Title}}<small>{{.Subtitle}}</small></a>{{end}}{{end}}
+{{define "brand-logo"}}{{if .HasHeaderImage}}<a class="hr-logo hr-logo-img" href="/"><img src="/branding/header" alt="{{.Title}}"></a>{{else if .Logo}}<a class="hr-logo hr-logo-mark" href="/"><img src="/static/{{.Logo}}" alt="{{.LogoAlt}}" width="64" height="64"><span>{{.Title}}<small>{{.Subtitle}}</small></span></a>{{else}}<a class="hr-logo" href="/">{{.Title}}<small>{{.Subtitle}}</small></a>{{end}}{{end}}

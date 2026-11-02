@@ -3,40 +3,38 @@
  * and of the lab services behind it (clusterbook, clusterscope, machinery,
  * claim-machinery-api). Same custom properties as homerun2-tokens.css, which
  * the portal serves this file as; only custom properties, no rules.
+ *
+ * Memphis · Creme: the stuttgart-things colours (violet and amber of the
+ * logo, black outlines, a pop pink) on a creme ground with white cards.
+ * Every text colour (text, muted, accent, ok, info, warning, error,
+ * highlight) reads at 4.5:1 or more on bg, surface and card. accent-2
+ * (amber) and accent-3 (pink) are fills, not text colours: put dark text
+ * on them.
  */
 :root {
-    --hr-bg: #0f1117;
-    --hr-surface: #151821;
-    --hr-card: #1a1d27;
-    --hr-border: #2a2d3a;
-    --hr-text: #e1e4ed;
-    --hr-muted: #8b8fa3;
-
-    --hr-accent: #6c8aff;
-    --hr-accent-2: #38bdf8;
-    --hr-accent-3: #6c8aff;
-
-    --hr-ok: #4ade80;
-    --hr-info: #38bdf8;
-    --hr-warning: #fbbf24;
-    --hr-error: #f87171;
-    --hr-highlight: #7dd3fc;
-
-    --hr-radius: 10px;
-    --hr-font: system-ui, -apple-system, "Segoe UI", sans-serif;
-    --hr-mono: "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace;
-    /* No pixel font in this theme: the places that use it get the UI font. */
-    --hr-pixel: var(--hr-font);
-
-    color-scheme: dark;
-}
-
-:root[data-theme="light"] {
-    --hr-bg: #f1f5f9;
+    --hr-bg: #fff6e6;
     --hr-surface: #ffffff;
     --hr-card: #ffffff;
-    --hr-border: #cbd5e1;
-    --hr-text: #0f172a;
-    --hr-muted: #475569;
+    --hr-border: #000000;
+    --hr-text: #1a0a5e;
+    --hr-muted: #3b2f6b;
+
+    --hr-accent: #4400fb;
+    --hr-accent-2: #ffb63c;
+    --hr-accent-3: #ff3ec8;
+
+    --hr-ok: #0f6b2e;
+    --hr-info: #0b5cad;
+    --hr-warning: #8a4b00;
+    --hr-error: #b3122e;
+    /* Section heads and subtitles: a deep shade of the pop pink. */
+    --hr-highlight: #b0006f;
+
+    --hr-radius: 14px;
+    --hr-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --hr-mono: "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+    /* Pixel font of the retro headings; a page using it loads Press Start 2P. */
+    --hr-pixel: "Press Start 2P", var(--hr-mono);
+
     color-scheme: light;
 }

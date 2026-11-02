@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -87,7 +88,7 @@ func TestMux(t *testing.T) {
 // TestThemeFilesExist keeps every theme's files in static/.
 func TestThemeFilesExist(t *testing.T) {
 	for name, theme := range branding.Themes {
-		for _, f := range []string{theme.Tokens, theme.Stylesheet} {
+		for _, f := range []string{theme.Tokens, theme.Stylesheet, theme.Logo, theme.Favicon} {
 			if f == "" {
 				continue
 			}
@@ -123,7 +124,7 @@ func TestMuxBranding(t *testing.T) {
 	defer portal.Close()
 
 	for path, want := range map[string]string{
-		"/static/homerun2-tokens.css":  "--hr-accent: #6c8aff",
+		"/static/homerun2-tokens.css":  "--hr-accent: #4400fb",
 		"/static/themes/machinery.css": ".hr-logo",
 		"/branding/header":             "<svg",
 		"/":                            `<img src="/branding/header" alt="machinery">`,
@@ -146,6 +147,41 @@ func TestMuxBranding(t *testing.T) {
 		if (path == "/" || path == "/kiosk") && !strings.Contains(string(body), `<link rel="icon" href="/branding/favicon" type="image/png">`) {
 			t.Errorf("GET %s lacks the favicon link", path)
 		}
+	}
+}
+
+// TestMuxThemeFavicon: without PORTAL_FAVICON machinery serves the sthings
+// logo it embeds, homerun2 the built-in SVG tiles.
+func TestMuxThemeFavicon(t *testing.T) {
+	logo, err := fs.ReadFile(staticFS, "static/sthings-logo.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for theme, typ := range map[string]string{"machinery": "image/png", "homerun2": "image/svg+xml"} {
+		brand, err := branding.Load(theme, "", "", "", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg := config.Config{HealthInterval: time.Second, HealthTimeout: time.Second, Branding: brand}
+		portal := httptest.NewServer(newMux(cfg, health.NewChecker(nil, time.Second), web.BuildInfo{}))
+		for _, path := range []string{"/favicon.ico", "/"} {
+			resp, err := http.Get(portal.URL + path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			switch {
+			// html/template escapes the + of image/svg+xml.
+			case path == "/" && !strings.Contains(string(body), `<link rel="icon" href="/branding/favicon" type="`+strings.ReplaceAll(typ, "+", "&#43;")+`">`):
+				t.Errorf("%s: GET / lacks the %s favicon link", theme, typ)
+			case path != "/" && resp.Header.Get("Content-Type") != typ:
+				t.Errorf("%s: GET %s: Content-Type %q, want %s", theme, path, resp.Header.Get("Content-Type"), typ)
+			case path != "/" && (theme == "machinery") != bytes.Equal(body, logo):
+				t.Errorf("%s: GET %s: the sthings logo only for machinery", theme, path)
+			}
+		}
+		portal.Close()
 	}
 }
 

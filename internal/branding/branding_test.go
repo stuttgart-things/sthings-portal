@@ -1,6 +1,8 @@
 package branding
 
 import (
+	"bytes"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,6 +22,9 @@ func TestLoadDefaultsToHomerun2(t *testing.T) {
 	if b.HasHeaderImage() {
 		t.Error("default has a header image")
 	}
+	if b.Logo != "" || b.Theme.Favicon != "" {
+		t.Errorf("homerun2 got a logo or favicon file: %+v", b.Theme)
+	}
 }
 
 func TestLoadThemeAndOverrides(t *testing.T) {
@@ -27,7 +32,8 @@ func TestLoadThemeAndOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b.Name != "machinery" || b.Tokens != "themes/machinery-tokens.css" || b.Stylesheet != "themes/machinery.css" || b.PixelFont {
+	if b.Name != "machinery" || b.Tokens != "themes/machinery-tokens.css" || b.Stylesheet != "themes/machinery.css" || !b.PixelFont ||
+		b.Logo != "sthings-logo.png" || b.LogoAlt == "" || b.Theme.Favicon != "sthings-logo.png" {
 		t.Errorf("machinery theme = %+v", b.Theme)
 	}
 	if b.Title != "Lab" || b.Subtitle != "LABUL" || b.PageTitle != "Lab" {
@@ -81,6 +87,9 @@ func TestHeaderImage(t *testing.T) {
 	}
 }
 
+// static is the portal's static/ directory, which main embeds.
+var static = os.DirFS("../../static")
+
 func TestFaviconDefaultPerTheme(t *testing.T) {
 	for name := range Themes {
 		b, err := Load(name, "", "", "", "")
@@ -90,17 +99,62 @@ func TestFaviconDefaultPerTheme(t *testing.T) {
 		if b.Accent == "" {
 			t.Errorf("theme %s has no accent for its favicon", name)
 		}
+		// Without the static files every theme has the built-in tiles.
+		if _, typ := b.Favicon(); typ != "image/svg+xml" {
+			t.Errorf("theme %s without static files: favicon %q, want the built-in SVG", name, typ)
+		}
+		if b, err = b.WithStatic(static); err != nil {
+			t.Fatal(err)
+		}
 		rec := httptest.NewRecorder()
 		b.ServeFavicon(rec, httptest.NewRequest(http.MethodGet, FaviconPath, nil))
+		if rec.Header().Get("Cache-Control") == "" {
+			t.Errorf("theme %s: favicon without Cache-Control", name)
+		}
+		if b.Theme.Favicon != "" {
+			// The theme's own file, e.g. the sthings logo of machinery.
+			want, err := fs.ReadFile(static, b.Theme.Favicon)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/png" || b.FaviconType() != "image/png" || !bytes.Equal(rec.Body.Bytes(), want) {
+				t.Errorf("theme %s: serve = %d %q, want %s as image/png", name, rec.Code, rec.Header().Get("Content-Type"), b.Theme.Favicon)
+			}
+			continue
+		}
 		if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/svg+xml" || b.FaviconType() != "image/svg+xml" {
 			t.Errorf("theme %s: serve = %d %q", name, rec.Code, rec.Header().Get("Content-Type"))
 		}
 		if !strings.Contains(rec.Body.String(), `fill="`+b.Accent+`"`) {
 			t.Errorf("theme %s: default favicon lacks the accent %s: %s", name, b.Accent, rec.Body.String())
 		}
-		if rec.Header().Get("Cache-Control") == "" {
-			t.Errorf("theme %s: favicon without Cache-Control", name)
-		}
+	}
+}
+
+// TestFaviconFileWinsOverTheme: PORTAL_FAVICON beats the theme's file, and
+// a theme file that is missing is an error.
+func TestFaviconFileWinsOverTheme(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "icon.svg")
+	if err := os.WriteFile(path, []byte("<svg>lab</svg>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	b, err := Load("machinery", "", "", "", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, err = b.WithStatic(static); err != nil {
+		t.Fatal(err)
+	}
+	if data, typ := b.Favicon(); typ != "image/svg+xml" || string(data) != "<svg>lab</svg>" {
+		t.Errorf("favicon = %q %q, want the PORTAL_FAVICON file", typ, data)
+	}
+
+	b, err = Load("machinery", "", "", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.WithStatic(os.DirFS(t.TempDir())); err == nil || !strings.Contains(err.Error(), "machinery") {
+		t.Errorf("missing theme favicon: err = %v, want an error naming the theme", err)
 	}
 }
 

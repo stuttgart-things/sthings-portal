@@ -99,6 +99,12 @@ func newMux(cfg config.Config, checker *health.Checker, build web.BuildInfo) htt
 	if brand.Name == "" {
 		brand = branding.Default()
 	}
+	// The theme's own favicon file, unless PORTAL_FAVICON set one.
+	brand, err = brand.WithStatic(staticSub)
+	if err != nil {
+		slog.Error("invalid branding", "error", err)
+		os.Exit(1)
+	}
 	// The theme's palette under the path the service UIs link, so they take
 	// on the deployment's theme too.
 	mux.HandleFunc("GET /static/homerun2-tokens.css", func(rw http.ResponseWriter, r *http.Request) {

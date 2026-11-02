@@ -128,7 +128,7 @@ keeps its full header.
 | `PORTAL_TITLE` | *(theme's)* | Header text, also the page title |
 | `PORTAL_SUBTITLE` | *(theme's)* | Small line under the header text |
 | `PORTAL_HEADER_IMAGE` | *(none)* | Path to a header graphic (`.svg`, `.png`, `.jpg`, `.webp`, at most 1 MiB) shown instead of the text |
-| `PORTAL_FAVICON` | *(theme's)* | Path to a favicon (`.svg`, `.png`, `.ico`, at most 1 MiB); without it a built-in icon in the theme's accent colour |
+| `PORTAL_FAVICON` | *(theme's)* | Path to a favicon (`.svg`, `.png`, `.ico`, at most 1 MiB); without it the theme's icon (built-in tiles in its accent colour, `machinery`: the sthings logo) |
 | `AUTH_MODE` | `none` | `none` (open, as before), `local` or `oidc` (login, see Authentication) |
 | `AUTH_USERS_FILE` | *(none)* | Users file: `name:bcrypt-hash[:group,group]` per line; required for `local`, the emergency access for `oidc` |
 | `AUTH_SESSION_KEY` | *(none)* | At least 32 bytes; signs the session cookie |
@@ -157,10 +157,12 @@ One codebase, one look per use case, chosen at deploy time:
 | Theme | Look | Used by |
 |---|---|---|
 | `homerun2` (default) | Accent gradient banner, HOMERUN² in the pixel font, amber subtitles | `homerun2-portal` |
-| `machinery` | Flat dark header with an accent line, UI font throughout, the machinery palette | `lab-portal` (clusterbook, clusterscope, machinery, claim-machinery-api) |
+| `machinery` | Memphis · Creme: retro 80s in the stuttgart-things colours — amber header with the sthings logo, title in the pixel font, white cards with black outlines and hard violet shadows, Memphis shapes on a creme ground; the sthings logo as favicon | `lab-portal` (clusterbook, clusterscope, machinery, claim-machinery-api) |
 
 A theme is a palette (`static/homerun2-tokens.css`, `static/themes/<name>-tokens.css`)
-plus an optional layout stylesheet (`static/themes/<name>.css`). The portal
+plus an optional layout stylesheet (`static/themes/<name>.css`), and
+optionally a logo shown left of the header text and its own favicon file
+(both under `static/`). The portal
 serves the theme's palette **as `/static/homerun2-tokens.css`** — the file the
 service UIs link behind the portal — so the services take on the theme too.
 
@@ -174,7 +176,8 @@ kubectl -n lab-portal create configmap lab-portal-branding --from-file=header.sv
 ```
 
 Every theme has a favicon: a small SVG in its accent colour, built into the
-portal. `PORTAL_FAVICON` replaces it with a file (`.svg`, `.png` or `.ico`,
+portal, or the theme's own file (`machinery`: the sthings logo, a PNG).
+`PORTAL_FAVICON` replaces it with a file (`.svg`, `.png` or `.ico`,
 at most 1 MiB). The portal serves it **without login** at `/branding/favicon`
 (linked from every page, the login included) and at `/favicon.ico`, where
 browsers look on their own, with the file's Content-Type and

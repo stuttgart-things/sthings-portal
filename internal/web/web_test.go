@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/stuttgart-things/sthings-portal/internal/branding"
@@ -192,28 +193,43 @@ func TestBrandingInPages(t *testing.T) {
 	body := get(t, mux, "/").Body.String()
 	for _, want := range []string{
 		"<title>Lab</title>",
-		`<a class="hr-logo" href="/">Lab<small>LABUL</small></a>`,
+		// The theme's logo left of title and subtitle.
+		`<a class="hr-logo hr-logo-mark" href="/"><img src="/static/sthings-logo.png" alt="stuttgart-things" width="64" height="64"><span>Lab<small>LABUL</small></span></a>`,
 		`<link rel="stylesheet" href="/static/themes/machinery.css">`,
+		"Press+Start+2P",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("index lacks %q", want)
 		}
 	}
-	if strings.Contains(body, "Press+Start+2P") {
-		t.Error("machinery theme loads the pixel font")
-	}
-	if !strings.Contains(get(t, mux, "/kiosk").Body.String(), "Lab<small>KIOSK</small>") {
-		t.Error("kiosk lacks the theme title")
+	kiosk := get(t, mux, "/kiosk").Body.String()
+	if !strings.Contains(kiosk, `<img src="/static/sthings-logo.png" alt="stuttgart-things" width="40" height="40"><span>Lab<small>KIOSK</small></span>`) {
+		t.Error("kiosk lacks the theme logo and title")
 	}
 
-	// The default keeps today's look.
+	// The theme's favicon file (main reads it with WithStatic) is announced
+	// as a PNG; PORTAL_FAVICON would win over it.
+	withIcon, err := brand.WithStatic(fstest.MapFS{"sthings-logo.png": {Data: []byte("png")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux = http.NewServeMux()
+	New(nil, health.NewChecker(nil, time.Second), BuildInfo{}, time.Second, withIcon).Register(mux)
+	if !strings.Contains(get(t, mux, "/").Body.String(), `<link rel="icon" href="/branding/favicon" type="image/png">`) {
+		t.Error("machinery index does not announce its PNG favicon")
+	}
+
+	// The default keeps today's look: no logo, the built-in SVG favicon.
 	def := get(t, setup(t), "/").Body.String()
-	for _, want := range []string{"<title>homerun2 portal</title>", "HOMERUN²<small>PORTAL</small>", "Press+Start+2P"} {
+	for _, want := range []string{
+		"<title>homerun2 portal</title>", `<a class="hr-logo" href="/">HOMERUN²<small>PORTAL</small></a>`, "Press+Start+2P",
+		`<link rel="icon" href="/branding/favicon" type="image/svg&#43;xml">`, // html/template escapes the +
+	} {
 		if !strings.Contains(def, want) {
 			t.Errorf("default index lacks %q", want)
 		}
 	}
-	if strings.Contains(def, "themes/") {
-		t.Error("default loads a theme stylesheet")
+	if strings.Contains(def, "themes/") || strings.Contains(def, "hr-logo-mark") || strings.Contains(def, `alt="stuttgart-things"`) {
+		t.Error("default loads a theme stylesheet or shows a logo")
 	}
 }
