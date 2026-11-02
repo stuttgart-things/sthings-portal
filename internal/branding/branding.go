@@ -8,6 +8,7 @@ package branding
 
 import (
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -35,6 +36,14 @@ type Theme struct {
 	// Accent is the palette's --hr-accent, the colour of the built-in
 	// favicon.
 	Accent string
+	// Logo is a graphic under static/ shown left of the header text when
+	// there is no header image; empty for none.
+	Logo string
+	// LogoAlt is the logo's alt text.
+	LogoAlt string
+	// Favicon is a file under static/ served as the favicon without
+	// PORTAL_FAVICON (see WithStatic); empty for the built-in tiles.
+	Favicon string
 }
 
 // Themes are the presets PORTAL_THEME picks from.
@@ -46,7 +55,8 @@ var Themes = map[string]Theme{
 	"machinery": {
 		Name: "machinery", Title: "machinery", Subtitle: "LAB PORTAL", PageTitle: "machinery portal",
 		Tokens: "themes/machinery-tokens.css", Stylesheet: "themes/machinery.css",
-		Accent: "#6c8aff",
+		PixelFont: true, Accent: "#4400fb",
+		Logo: "sthings-logo.png", LogoAlt: "stuttgart-things", Favicon: "sthings-logo.png",
 	},
 }
 
@@ -187,8 +197,28 @@ const defaultFavicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 
 	`<g fill="#fff"><rect x="7" y="7" width="8" height="8" rx="2"/><rect x="17" y="7" width="8" height="8" rx="2" fill-opacity=".7"/>` +
 	`<rect x="7" y="17" width="8" height="8" rx="2" fill-opacity=".7"/><rect x="17" y="17" width="8" height="8" rx="2"/></g></svg>`
 
+// WithStatic reads the theme's Favicon from static (the portal's static/
+// files) unless PORTAL_FAVICON set one, which wins over the theme. A theme
+// without a Favicon file keeps the built-in tiles.
+func (b Branding) WithStatic(static fs.FS) (Branding, error) {
+	if len(b.favicon) > 0 || b.Theme.Favicon == "" {
+		return b, nil
+	}
+	typ, ok := faviconTypes[strings.ToLower(filepath.Ext(b.Theme.Favicon))]
+	if !ok {
+		return Branding{}, fmt.Errorf("theme %s: favicon %q: want an .svg, .png or .ico file", b.Name, b.Theme.Favicon)
+	}
+	data, err := fs.ReadFile(static, b.Theme.Favicon)
+	if err != nil {
+		return Branding{}, fmt.Errorf("theme %s: favicon: %w", b.Name, err)
+	}
+	b.favicon, b.faviconType = data, typ
+	return b, nil
+}
+
 // Favicon is the deployment's favicon and its Content-Type: the
-// PORTAL_FAVICON file, else the theme's built-in one.
+// PORTAL_FAVICON file, else the theme's file (WithStatic), else the
+// built-in tiles in the theme's accent.
 func (b Branding) Favicon() ([]byte, string) {
 	if len(b.favicon) > 0 {
 		return b.favicon, b.faviconType
