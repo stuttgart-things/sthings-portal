@@ -122,6 +122,11 @@ func newMux(cfg config.Config, checker *health.Checker, build web.BuildInfo) htt
 		mux.Handle(s.Path()+"/", proxy.New(s))
 		slog.Info("service mounted", "key", s.Key, "path", s.Path()+"/", "url", s.URL.String())
 	}
+	for _, r := range cfg.Redirects {
+		// "/archive/" takes the subtree; "/archive" goes to it first (mux).
+		mux.Handle("/"+r.From+"/", r.Handler())
+		slog.Info("redirect mounted", "from", "/"+r.From+"/", "to", "/"+r.To+"/")
+	}
 	if cfg.Auth != nil {
 		return cfg.Auth.Middleware(mux)
 	}

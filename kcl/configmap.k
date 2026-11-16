@@ -17,6 +17,8 @@ configMap = {
     data: {
         LOG_LEVEL: "info"
         PORTAL_SERVICES: ",".join(config.services)
+        if config.redirects:
+            PORTAL_REDIRECTS: ",".join(config.redirects)
         HEALTH_INTERVAL: config.healthInterval
         HEALTH_TIMEOUT: config.healthTimeout
         PORTAL_THEME: config.theme

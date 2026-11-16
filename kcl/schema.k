@@ -25,6 +25,10 @@ schema Portal:
     # BASE_PATH=/<key>, e.g.
     #   ["led=http://homerun2-led-catcher.homerun2.svc.cluster.local"]
     services: [str] = []
+    # Renamed service keys, old=new (PORTAL_REDIRECTS): /<old>/... answers 301
+    # to /<new>/..., path and query kept, so handed-out links keep working.
+    # new must be a key of services, old must not be one.
+    redirects: [str] = []
 
     # Look of this deployment (internal/branding): a theme preset —
     # "homerun2" (pixel banner) or "machinery" (lab portal) — whose palette
