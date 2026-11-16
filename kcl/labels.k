@@ -9,6 +9,7 @@ _name = option("config.name")
 _image = option("config.image")
 _namespace = option("config.namespace")
 _services = option("config.services")
+_redirects = option("config.redirects")
 _healthInterval = option("config.healthInterval")
 _healthTimeout = option("config.healthTimeout")
 _httpRouteEnabled = option("config.httpRouteEnabled")
@@ -82,6 +83,8 @@ config: schema.Portal = schema.Portal {
         namespace = _namespace
     if _services:
         services = _services
+    if _redirects:
+        redirects = _redirects
     if _healthInterval:
         healthInterval = _healthInterval
     if _healthTimeout:

@@ -119,6 +119,7 @@ keeps its full header.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORTAL_SERVICES` | *(empty)* | Comma-separated `key=url`, in navigation order. `key\|Title=url` sets the title. The service is served under `/<key>/`; the URL has no path |
+| `PORTAL_REDIRECTS` | *(empty)* | Comma-separated `old=new` path keys: `/<old>/…` answers 301 to `/<new>/…`, rest of the path and query kept, so links survive a renamed key. `new` must be a key of `PORTAL_SERVICES`; `old` must not be one |
 | `PORT` | `8080` | HTTP port |
 | `HEALTH_INTERVAL` | `10s` | How often each service's `/health` is checked; also the header's refresh |
 | `HEALTH_TIMEOUT` | `2s` | Per check |

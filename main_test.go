@@ -425,3 +425,41 @@ func TestMuxKiosk(t *testing.T) {
 		t.Errorf("POST as kiosk: %d, want 403", resp.StatusCode)
 	}
 }
+
+func TestRedirects(t *testing.T) {
+	svc := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "fleet data "+r.URL.RequestURI())
+	}))
+	defer svc.Close()
+	svcs, err := services.Parse("fleet-data=" + svc.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	redirects, err := services.ParseRedirects("archive=fleet-data", svcs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Config{Services: svcs, Redirects: redirects, HealthInterval: time.Second, HealthTimeout: time.Second}
+	portal := httptest.NewServer(newMux(cfg, health.NewChecker(svcs, time.Second), web.BuildInfo{}))
+	defer portal.Close()
+
+	noFollow := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := noFollow.Get(portal.URL + "/archive/?tab=analyses")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "/fleet-data/?tab=analyses" {
+		t.Fatalf("got %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	// Followed, it lands on the service with path and query intact.
+	resp, err = http.Get(portal.URL + "/archive/ui/analysis?key=a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if string(b) != "fleet data /fleet-data/ui/analysis?key=a" {
+		t.Fatalf("followed: %q", b)
+	}
+}

@@ -16,8 +16,10 @@ import (
 
 // Config is everything the portal reads from the environment.
 type Config struct {
-	Port           string
-	Services       []services.Service
+	Port     string
+	Services []services.Service
+	// Redirects send renamed service paths on (PORTAL_REDIRECTS).
+	Redirects      []services.Redirect
 	HealthInterval time.Duration
 	HealthTimeout  time.Duration
 	Branding       branding.Branding
@@ -29,6 +31,10 @@ type Config struct {
 // typo in PORTAL_SERVICES should stop the pod, not hide a service.
 func Load() (Config, error) {
 	svcs, err := services.Parse(os.Getenv("PORTAL_SERVICES"))
+	if err != nil {
+		return Config{}, err
+	}
+	redirects, err := services.ParseRedirects(os.Getenv("PORTAL_REDIRECTS"), svcs)
 	if err != nil {
 		return Config{}, err
 	}
@@ -76,6 +82,7 @@ func Load() (Config, error) {
 		Branding:       brand,
 		Port:           getEnv("PORT", "8080"),
 		Services:       svcs,
+		Redirects:      redirects,
 		HealthInterval: interval,
 		HealthTimeout:  timeout,
 	}, nil
